@@ -1,92 +1,73 @@
 import React, { useContext, useReducer, memo } from "react";
 
 const AppContext = React.createContext({
-  loading: false,
-  aboveTreeDepth: 0,
-  belowTreeDepth: 0,
-  toggleLoading: (): void => {
-    throw new Error("toggleLoading not implemented");
-  },
-});
-
-const DeepTreeContext = React.createContext({
-  depth: 0,
-  label: "deep tree",
-  toggleLoading: (): void => {
-    throw new Error("toggleLoading not implemented");
+  toggled: false,
+  toggleValue: (): void => {
+    throw new Error("toggleValue not implemented");
   },
 });
 
 const AppContextProvider: React.FC = ({ children }) => {
-  const [loading, toggleLoading] = useReducer((isLoading: boolean) => !isLoading, false);
-
-  const aboveTreeDepth = 0;
-  const belowTreeDepth = 10;
-
+  const [toggled, toggleValue] = useReducer((isToggled: boolean) => !isToggled, false);
   return (
-    <AppContext.Provider
-      value={{ loading, toggleLoading, aboveTreeDepth, belowTreeDepth }}
-    >
-      {children}
-    </AppContext.Provider>
+    <AppContext.Provider value={{ toggled, toggleValue }}>{children}</AppContext.Provider>
   );
 };
 
-const App: React.FC = () => {
-  return (
-    <AppContextProvider>
-      <TheApp />
-    </AppContextProvider>
-  );
-};
-
-const TheApp: React.FC = () => {
-  const { loading, aboveTreeDepth, belowTreeDepth, toggleLoading } = useContext(
-    AppContext
-  );
-  return (
-    <div>
-      <DeepTreeToggler
-        label="above"
-        depth={aboveTreeDepth}
-        toggleLoading={toggleLoading}
-      />
-      <DeepTreeToggler
-        label="below"
-        depth={belowTreeDepth}
-        toggleLoading={toggleLoading}
-      />
-      <p>{loading ? "loading" : "not loading"}</p>
-    </div>
-  );
-};
+const DeepTreeContext = React.createContext({
+  depth: 0,
+  label: "deep tree",
+  toggleValue: (): void => {
+    throw new Error("toggleValue not implemented");
+  },
+});
 
 interface DeepTreeProps {
-  toggleLoading: () => void;
+  toggleValue: () => void;
   label: string;
   depth: number;
 }
 
-const DeepTreeToggler: React.FC<DeepTreeProps> = memo(
-  ({ toggleLoading, label, depth }) => {
-    return (
-      <DeepTreeContext.Provider value={{ toggleLoading, label, depth }}>
-        <DeepTree />
-        <Toggler />
-      </DeepTreeContext.Provider>
-    );
-  }
-);
+const App: React.FC = () => {
+  return (
+    <AppContextProvider>
+      <ToggleMonitor />
+      <DeepTreeApp />
+    </AppContextProvider>
+  );
+};
+
+const DeepTreeApp: React.FC = () => {
+  const { toggleValue } = useContext(AppContext);
+  return (
+    <div>
+      <DeepTreeToggler label="above" depth={5} toggleValue={toggleValue} />
+      <DeepTreeToggler label="below" depth={30} toggleValue={toggleValue} />
+    </div>
+  );
+};
+
+const DeepTreeToggler: React.FC<DeepTreeProps> = memo(({ toggleValue, label, depth }) => {
+  return (
+    <DeepTreeContext.Provider value={{ toggleValue, label, depth }}>
+      <DeepTree />
+    </DeepTreeContext.Provider>
+  );
+});
 
 const DeepTree: React.FC = () => {
   const { label, depth } = useContext(DeepTreeContext);
   console.count(`${label} render count`);
 
-  return [...Array(depth)]
-    .map((_, i) => depth - i)
-    .reduce((nested, level) => {
+  return Array.from({ length: depth }, (_, i) => i).reduce(
+    (nested, level) => {
       return <Nester level={level}>{nested}</Nester>;
-    }, <p>{label}</p>);
+    },
+    <>
+      {label} (<ToggleMonitor />)
+      <Toggler />
+    </>
+  );
 };
 
 interface NesterProps {
@@ -98,15 +79,21 @@ const Nester: React.FC<NesterProps> = ({ children, level }) => {
   console.count(`nester level ${level} render count`);
   return (
     <div className="nested-component">
-      level: {level}, label: {label}, tree depth: {depth} <Toggler />
+      level: {level}, label: {label}, tree depth: {depth}
       {children}
     </div>
   );
 };
 
 const Toggler: React.FC = () => {
-  const { toggleLoading, label } = useContext(DeepTreeContext);
-  return <button onClick={() => toggleLoading()}>Toggle Loading from {label}</button>;
+  const { toggleValue, label } = useContext(DeepTreeContext);
+  return <button onClick={() => toggleValue()}>Toggle from {label}</button>;
+};
+
+const ToggleMonitor: React.FC = () => {
+  const { toggled } = useContext(AppContext);
+  console.count("toggle monitor render count");
+  return <span>{toggled ? "toggled" : "not toggled"}</span>;
 };
 
 export default App;
