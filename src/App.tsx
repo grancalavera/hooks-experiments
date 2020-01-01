@@ -35,23 +35,21 @@ const App: React.FC = () => {
 };
 
 const TheApp: React.FC = () => {
-  const { loading } = useContext(Context);
+  const { loading, aboveTreeDepth, belowTreeDepth, toggleLoading } = useContext(Context);
   return (
     <div>
-      <WithToggler label={"above"} />
-      <WithToggler label={"below"} />
+      <DeepTreeToggler
+        label={"above"}
+        treeDepth={aboveTreeDepth}
+        toggleLoading={toggleLoading}
+      />
+      <DeepTreeToggler
+        label={"below"}
+        treeDepth={belowTreeDepth}
+        toggleLoading={toggleLoading}
+      />
       <p>{loading ? "loading" : "not loading"}</p>
     </div>
-  );
-};
-
-const WithToggler: React.FC<DeepTreeProps> = ({ label }) => {
-  const { toggleLoading } = useContext(Context);
-  return (
-    <>
-      <DeepTree label={label} treeDepth={5} />
-      <button onClick={() => toggleLoading()}>Toggle Loading from {label}</button>
-    </>
   );
 };
 
@@ -59,6 +57,23 @@ interface DeepTreeProps {
   label: string;
   treeDepth?: number;
 }
+
+type DeepTreeTogglerProps = DeepTreeProps & {
+  toggleLoading: () => void;
+};
+
+const DeepTreeToggler: React.FC<DeepTreeTogglerProps> = ({
+  label,
+  treeDepth,
+  toggleLoading,
+}) => {
+  return (
+    <>
+      <DeepTree label={label} treeDepth={treeDepth} />
+      <button onClick={() => toggleLoading()}>Toggle Loading from {label}</button>
+    </>
+  );
+};
 
 const DeepTree: React.FC<DeepTreeProps> = memo(({ label, treeDepth = 0 }) => {
   console.count(`${label} render count`);
